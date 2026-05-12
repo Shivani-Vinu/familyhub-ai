@@ -5,13 +5,52 @@ from datetime import datetime
 from difflib import get_close_matches
 
 # ============================
-# FamilyHub AI - Winner Version (Hackathon Upgrade)
+# FamilyHub AI - Winner Version + Login System
 # ============================
 
 st.set_page_config(page_title="FamilyHub AI", layout="wide")
 
 # ----------------------------
-# Session State Init
+# SIMPLE FAMILY LOGIN SYSTEM
+# ----------------------------
+
+USERS = {
+    "parent": "1234",
+    "child1": "1111",
+    "child2": "2222",
+    "admin": "admin"
+}
+
+if "auth" not in st.session_state:
+    st.session_state.auth = False
+    st.session_state.user = None
+
+
+def login_page():
+    st.title("🔐 FamilyHub AI Login")
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username in USERS and USERS[username] == password:
+            st.session_state.auth = True
+            st.session_state.user = username
+            st.success(f"Welcome {username}!")
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
+
+# ----------------------------
+# BLOCK APP IF NOT LOGGED IN
+# ----------------------------
+
+if not st.session_state.auth:
+    login_page()
+    st.stop()
+
+# ----------------------------
+# SESSION STATE INIT
 # ----------------------------
 
 if "chat" not in st.session_state:
@@ -27,7 +66,7 @@ if "energy_usage" not in st.session_state:
     st.session_state.energy_usage = [5, 6, 4, 7, 8, 6, 9]
 
 # ----------------------------
-# Smart AI Engine (Light NLP)
+# SMART AI ENGINE
 # ----------------------------
 
 knowledge_base = {
@@ -54,7 +93,7 @@ def smart_ai_response(query):
     return "I analyzed your input. Try asking about stress, homework, energy, or groceries."
 
 # ----------------------------
-# Dashboard Calculations
+# DASHBOARD CALCULATIONS
 # ----------------------------
 
 def mood_score():
@@ -70,146 +109,135 @@ def energy_forecast():
     x = np.arange(len(data))
 
     if len(data) < 2:
-        return data[-1]
+        return int(data[-1])
 
     coeff = np.polyfit(x, data, 1)
     return int(coeff[0] * (len(data) + 1) + coeff[1])
 
 # ----------------------------
-# Sidebar Navigation
+# SIDEBAR NAVIGATION
 # ----------------------------
 
 menu = st.sidebar.radio(
-    "Navigation",
+    f"Logged in as: {st.session_state.user}",
     ["🏠 Dashboard", "🧠 AI Assistant", "🚨 Safety", "🛒 Grocery", "⚡ Energy", "😊 Mood", "📄 Weekly Report"]
 )
 
 # ----------------------------
-# DASHBOARD (NEW)
+# DASHBOARD
 # ----------------------------
 
 if menu == "🏠 Dashboard":
-    st.title("🏠 FamilyHub AI - Intelligence Dashboard")
+    st.title("🏠 Family Intelligence Dashboard")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Family Mood Score", f"{mood_score()} / 100")
+        st.metric("Mood Score", f"{mood_score()} / 100")
 
     with col2:
-        st.metric("Next Energy Forecast", energy_forecast())
+        st.metric("Energy Forecast", energy_forecast())
 
     with col3:
         st.metric("Grocery Items", len(st.session_state.grocery_list))
 
-    st.subheader("⚡ Energy Trend")
     st.line_chart(st.session_state.energy_usage)
 
 # ----------------------------
-# AI ASSISTANT (UPGRADED)
+# AI ASSISTANT
 # ----------------------------
 
 elif menu == "🧠 AI Assistant":
-    st.title("🧠 Intelligent Family AI Assistant")
+    st.title("🧠 AI Assistant")
 
-    user_input = st.text_input("Ask something:")
+    user_input = st.text_input("Ask something")
 
     if user_input:
         response = smart_ai_response(user_input)
         st.session_state.chat.append((user_input, response))
 
     for q, r in reversed(st.session_state.chat[-10:]):
-        st.write(f"🧑 You: {q}")
-        st.write(f"🤖 AI: {r}")
+        st.write(f"You: {q}")
+        st.write(f"AI: {r}")
         st.write("---")
 
 # ----------------------------
-# SAFETY MODULE (UPGRADED)
+# SAFETY
 # ----------------------------
 
 elif menu == "🚨 Safety":
-    st.title("🚨 Smart Safety Monitoring")
+    st.title("🚨 Safety System")
 
     if mood_score() < 40:
-        st.error("⚠ Emotional risk detected in family mood pattern")
+        st.error("Emotional risk detected")
 
     if energy_forecast() > np.mean(st.session_state.energy_usage) + 2:
-        st.warning("⚡ High energy usage predicted")
+        st.warning("High energy usage predicted")
 
-    if st.button("Trigger Emergency Alert"):
-        st.error("🚨 Emergency Alert Sent to Family Members")
+    if st.button("Emergency Alert"):
+        st.error("Alert sent to family members")
 
 # ----------------------------
-# GROCERY (SMART)
+# GROCERY
 # ----------------------------
 
 elif menu == "🛒 Grocery":
-    st.title("🛒 Smart Grocery Intelligence")
+    st.title("🛒 Grocery Planner")
 
     item = st.text_input("Add item")
 
     if st.button("Add") and item:
         st.session_state.grocery_list.append(item)
 
-    st.subheader("Current List")
     for i, g in enumerate(st.session_state.grocery_list, 1):
         st.write(f"{i}. {g}")
-
-    if len(st.session_state.grocery_list) > 5:
-        st.info("📦 Suggestion: Consider bulk buying for savings")
 
 # ----------------------------
 # ENERGY
 # ----------------------------
 
 elif menu == "⚡ Energy":
-    st.title("⚡ Energy Intelligence System")
+    st.title("⚡ Energy Monitor")
 
     st.line_chart(st.session_state.energy_usage)
-
-    st.write("Forecasted next value:", energy_forecast())
-
-    if energy_forecast() > 7:
-        st.warning("High usage predicted")
+    st.write("Forecast:", energy_forecast())
 
 # ----------------------------
-# MOOD TRACKER
+# MOOD
 # ----------------------------
 
 elif menu == "😊 Mood":
-    st.title("😊 Family Mood Intelligence")
+    st.title("😊 Mood Tracker")
 
     mood = st.selectbox("Mood", ["Happy", "Neutral", "Stressed", "Sad"])
 
     if st.button("Log"):
         st.session_state.mood_log.append((datetime.now().strftime("%Y-%m-%d %H:%M"), mood))
 
-    df = pd.DataFrame(st.session_state.mood_log, columns=["Time", "Mood"])
-    st.dataframe(df)
+    st.dataframe(pd.DataFrame(st.session_state.mood_log, columns=["Time", "Mood"]))
 
 # ----------------------------
-# WEEKLY REPORT (NEW BIG FEATURE)
+# WEEKLY REPORT
 # ----------------------------
 
 elif menu == "📄 Weekly Report":
-    st.title("📄 AI Family Weekly Report")
+    st.title("📄 Weekly AI Report")
 
-    if st.button("Generate Report"):
+    if st.button("Generate"):
         report = f"""
-        🏠 FAMILY REPORT
-        ----------------------
-        Mood Score: {mood_score()}/100
-        Energy Forecast: {energy_forecast()}
-        Grocery Items: {len(st.session_state.grocery_list)}
+Family Report
+----------------
+Mood Score: {mood_score()}
+Energy Forecast: {energy_forecast()}
+Grocery Items: {len(st.session_state.grocery_list)}
 
-        Insights:
-        - Mood is {'healthy' if mood_score()>60 else 'needs attention'}
-        - Energy usage trend is {'rising' if energy_forecast()>6 else 'stable'}
+Insights:
+- Mood status: {'Good' if mood_score()>60 else 'Needs attention'}
+- Energy trend: {'Rising' if energy_forecast()>6 else 'Stable'}
 
-        Suggestions:
-        - Spend more family time together
-        - Optimize energy usage
-        - Plan grocery shopping efficiently
-        """
-
+Suggestions:
+- Improve family interaction
+- Optimize energy usage
+- Plan groceries efficiently
+"""
         st.text_area("Report", report, height=300)
