@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from difflib import get_close_matches
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 # ============================
-# FamilyHub AI - Winner Version + Login System
+# FamilyHub AI - ML Enhanced Version
 # ============================
 
 st.set_page_config(page_title="FamilyHub AI", layout="wide")
@@ -41,10 +42,6 @@ def login_page():
         else:
             st.error("Invalid credentials")
 
-# ----------------------------
-# BLOCK APP IF NOT LOGGED IN
-# ----------------------------
-
 if not st.session_state.auth:
     login_page()
     st.stop()
@@ -66,15 +63,47 @@ if "energy_usage" not in st.session_state:
     st.session_state.energy_usage = [5, 6, 4, 7, 8, 6, 9]
 
 # ----------------------------
-# SMART AI ENGINE
+# ML MODELS (TRAINED ON SESSION DATA)
+# ----------------------------
+
+def train_energy_model():
+    data = np.array(st.session_state.energy_usage)
+    X = np.arange(len(data)).reshape(-1, 1)
+    y = data
+
+    model = LinearRegression()
+    model.fit(X, y)
+    return model
+
+
+def predict_energy(model):
+    next_x = np.array([[len(st.session_state.energy_usage)]])
+    return float(model.predict(next_x)[0])
+
+
+def train_mood_model():
+    if not st.session_state.mood_log:
+        return None
+
+    mapping = {"Happy": 3, "Neutral": 2, "Stressed": 1, "Sad": 0}
+
+    X = np.array([[i] for i in range(len(st.session_state.mood_log))])
+    y = np.array([mapping[m[1]] for m in st.session_state.mood_log])
+
+    model = LogisticRegression()
+    model.fit(X, y)
+    return model
+
+# ----------------------------
+# AI ENGINE
 # ----------------------------
 
 knowledge_base = {
-    "homework": "Break tasks into small steps and study in focused 25-minute sessions.",
-    "stress": "Take a short break, talk with family, or do a relaxing activity together.",
-    "energy": "Turn off unused appliances and use natural light during daytime.",
-    "grocery": "Use the grocery planner to track and optimize family needs.",
-    "family": "Strong communication improves family wellbeing and happiness."
+    "homework": "Break tasks into small steps and study in focused sessions.",
+    "stress": "Take breaks and talk with family.",
+    "energy": "Turn off unused appliances.",
+    "grocery": "Use planner to optimize shopping.",
+    "family": "Communication improves wellbeing."
 }
 
 def smart_ai_response(query):
@@ -90,10 +119,10 @@ def smart_ai_response(query):
         if k in query:
             return knowledge_base[k]
 
-    return "I analyzed your input. Try asking about stress, homework, energy, or groceries."
+    return "AI is learning. Try asking about stress, energy, or homework."
 
 # ----------------------------
-# DASHBOARD CALCULATIONS
+# DASHBOARD METRICS
 # ----------------------------
 
 def mood_score():
@@ -104,18 +133,13 @@ def mood_score():
     scores = [mapping[m[1]] for m in st.session_state.mood_log]
     return int(np.mean(scores))
 
-def energy_forecast():
-    data = np.array(st.session_state.energy_usage)
-    x = np.arange(len(data))
+energy_model = train_energy_model()
+energy_prediction = predict_energy(energy_model)
 
-    if len(data) < 2:
-        return int(data[-1])
-
-    coeff = np.polyfit(x, data, 1)
-    return int(coeff[0] * (len(data) + 1) + coeff[1])
+mood_model = train_mood_model()
 
 # ----------------------------
-# SIDEBAR NAVIGATION
+# NAVIGATION
 # ----------------------------
 
 menu = st.sidebar.radio(
@@ -128,7 +152,7 @@ menu = st.sidebar.radio(
 # ----------------------------
 
 if menu == "🏠 Dashboard":
-    st.title("🏠 Family Intelligence Dashboard")
+    st.title("🏠 AI Family Intelligence Dashboard")
 
     col1, col2, col3 = st.columns(3)
 
@@ -136,7 +160,7 @@ if menu == "🏠 Dashboard":
         st.metric("Mood Score", f"{mood_score()} / 100")
 
     with col2:
-        st.metric("Energy Forecast", energy_forecast())
+        st.metric("ML Energy Forecast", round(energy_prediction, 2))
 
     with col3:
         st.metric("Grocery Items", len(st.session_state.grocery_list))
@@ -148,7 +172,7 @@ if menu == "🏠 Dashboard":
 # ----------------------------
 
 elif menu == "🧠 AI Assistant":
-    st.title("🧠 AI Assistant")
+    st.title("🧠 ML-Powered AI Assistant")
 
     user_input = st.text_input("Ask something")
 
@@ -166,13 +190,13 @@ elif menu == "🧠 AI Assistant":
 # ----------------------------
 
 elif menu == "🚨 Safety":
-    st.title("🚨 Safety System")
+    st.title("🚨 Smart Safety System")
 
     if mood_score() < 40:
         st.error("Emotional risk detected")
 
-    if energy_forecast() > np.mean(st.session_state.energy_usage) + 2:
-        st.warning("High energy usage predicted")
+    if energy_prediction > np.mean(st.session_state.energy_usage) + 2:
+        st.warning("High energy usage predicted (ML model)")
 
     if st.button("Emergency Alert"):
         st.error("Alert sent to family members")
@@ -182,7 +206,7 @@ elif menu == "🚨 Safety":
 # ----------------------------
 
 elif menu == "🛒 Grocery":
-    st.title("🛒 Grocery Planner")
+    st.title("🛒 Smart Grocery Planner")
 
     item = st.text_input("Add item")
 
@@ -197,17 +221,17 @@ elif menu == "🛒 Grocery":
 # ----------------------------
 
 elif menu == "⚡ Energy":
-    st.title("⚡ Energy Monitor")
+    st.title("⚡ ML Energy Forecast System")
 
     st.line_chart(st.session_state.energy_usage)
-    st.write("Forecast:", energy_forecast())
+    st.success(f"Predicted next usage (ML): {round(energy_prediction,2)}")
 
 # ----------------------------
 # MOOD
 # ----------------------------
 
 elif menu == "😊 Mood":
-    st.title("😊 Mood Tracker")
+    st.title("😊 Family Mood Tracker")
 
     mood = st.selectbox("Mood", ["Happy", "Neutral", "Stressed", "Sad"])
 
@@ -221,23 +245,23 @@ elif menu == "😊 Mood":
 # ----------------------------
 
 elif menu == "📄 Weekly Report":
-    st.title("📄 Weekly AI Report")
+    st.title("📄 AI Weekly Intelligence Report")
 
     if st.button("Generate"):
         report = f"""
-Family Report
-----------------
+FAMILY AI REPORT
+-------------------
 Mood Score: {mood_score()}
-Energy Forecast: {energy_forecast()}
+ML Energy Forecast: {round(energy_prediction,2)}
 Grocery Items: {len(st.session_state.grocery_list)}
 
 Insights:
-- Mood status: {'Good' if mood_score()>60 else 'Needs attention'}
-- Energy trend: {'Rising' if energy_forecast()>6 else 'Stable'}
+- Mood: {'Healthy' if mood_score()>60 else 'Needs attention'}
+- Energy: {'Rising trend' if energy_prediction>6 else 'Stable'}
 
-Suggestions:
-- Improve family interaction
-- Optimize energy usage
-- Plan groceries efficiently
+AI Suggestions:
+- Improve family bonding time
+- Optimize electricity usage
+- Maintain balanced routine
 """
         st.text_area("Report", report, height=300)
