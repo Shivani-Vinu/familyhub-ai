@@ -1,1 +1,1 @@
-# familyhub-ai
+FamilyHub AI - Hackathon Project
