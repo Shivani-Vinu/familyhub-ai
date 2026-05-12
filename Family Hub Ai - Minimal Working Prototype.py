@@ -62,7 +62,7 @@ h1, h2, h3 {
 # LOGIN SYSTEM
 # ----------------------------
 
-USERS = {"parent":"1234","child1":"1111","child2":"2222","admin":"admin"}
+USERS = {"Shivani Mohan":"1234","child1":"1111","child2":"2222","admin":"admin"}
 
 if "auth" not in st.session_state:
     st.session_state.auth = False
