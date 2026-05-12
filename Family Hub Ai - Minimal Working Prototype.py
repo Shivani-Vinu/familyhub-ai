@@ -6,21 +6,63 @@ from difflib import get_close_matches
 from sklearn.linear_model import LinearRegression, LogisticRegression
 
 # ============================
-# FamilyHub AI - ML Enhanced Version
+# FamilyHub AI - Figma Style UI + ML Version
 # ============================
 
 st.set_page_config(page_title="FamilyHub AI", layout="wide")
 
 # ----------------------------
-# SIMPLE FAMILY LOGIN SYSTEM
+# MODERN UI (FIGMA-STYLE CSS)
 # ----------------------------
 
-USERS = {
-    "parent": "1234",
-    "child1": "1111",
-    "child2": "2222",
-    "admin": "admin"
+st.markdown("""
+<style>
+
+/* Background */
+.main {
+    background-color: #0f172a;
+    color: white;
 }
+
+/* Card style */
+.card {
+    background: rgba(255,255,255,0.08);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    margin-bottom: 15px;
+}
+
+/* Metric box */
+.metric-box {
+    background: linear-gradient(135deg, #4f46e5, #06b6d4);
+    padding: 20px;
+    border-radius: 16px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Title */
+h1, h2, h3 {
+    color: white;
+    font-family: 'Arial';
+}
+
+/* Sidebar */
+.css-1d391kg {
+    background-color: #111827;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------------------
+# LOGIN SYSTEM
+# ----------------------------
+
+USERS = {"parent":"1234","child1":"1111","child2":"2222","admin":"admin"}
 
 if "auth" not in st.session_state:
     st.session_state.auth = False
@@ -28,16 +70,20 @@ if "auth" not in st.session_state:
 
 
 def login_page():
-    st.title("🔐 FamilyHub AI Login")
+    st.title("🔐 FamilyHub AI")
+    st.subheader("Secure Family Login")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        username = st.text_input("Username")
+    with col2:
+        password = st.text_input("Password", type="password")
 
     if st.button("Login"):
         if username in USERS and USERS[username] == password:
             st.session_state.auth = True
             st.session_state.user = username
-            st.success(f"Welcome {username}!")
             st.rerun()
         else:
             st.error("Invalid credentials")
@@ -47,7 +93,7 @@ if not st.session_state.auth:
     st.stop()
 
 # ----------------------------
-# SESSION STATE INIT
+# SESSION STATE
 # ----------------------------
 
 if "chat" not in st.session_state:
@@ -60,208 +106,178 @@ if "grocery_list" not in st.session_state:
     st.session_state.grocery_list = []
 
 if "energy_usage" not in st.session_state:
-    st.session_state.energy_usage = [5, 6, 4, 7, 8, 6, 9]
+    st.session_state.energy_usage = [5,6,4,7,8,6,9]
 
 # ----------------------------
-# ML MODELS (TRAINED ON SESSION DATA)
+# ML MODELS
 # ----------------------------
 
-def train_energy_model():
-    data = np.array(st.session_state.energy_usage)
-    X = np.arange(len(data)).reshape(-1, 1)
-    y = data
-
+def energy_model():
+    X = np.arange(len(st.session_state.energy_usage)).reshape(-1,1)
+    y = np.array(st.session_state.energy_usage)
     model = LinearRegression()
-    model.fit(X, y)
+    model.fit(X,y)
     return model
 
-
-def predict_energy(model):
-    next_x = np.array([[len(st.session_state.energy_usage)]])
-    return float(model.predict(next_x)[0])
-
-
-def train_mood_model():
-    if not st.session_state.mood_log:
-        return None
-
-    mapping = {"Happy": 3, "Neutral": 2, "Stressed": 1, "Sad": 0}
-
-    X = np.array([[i] for i in range(len(st.session_state.mood_log))])
-    y = np.array([mapping[m[1]] for m in st.session_state.mood_log])
-
-    model = LogisticRegression()
-    model.fit(X, y)
-    return model
+def energy_predict():
+    model = energy_model()
+    pred = model.predict([[len(st.session_state.energy_usage)]])
+    return float(pred[0])
 
 # ----------------------------
 # AI ENGINE
 # ----------------------------
 
-knowledge_base = {
-    "homework": "Break tasks into small steps and study in focused sessions.",
-    "stress": "Take breaks and talk with family.",
-    "energy": "Turn off unused appliances.",
-    "grocery": "Use planner to optimize shopping.",
-    "family": "Communication improves wellbeing."
+kb = {
+    "homework":"Break tasks into small steps.",
+    "stress":"Take breaks and relax.",
+    "energy":"Turn off unused devices.",
+    "family":"Communication improves bonding.",
 }
 
-def smart_ai_response(query):
-    query = query.lower()
-    keys = list(knowledge_base.keys())
-
-    match = get_close_matches(query, keys, n=1, cutoff=0.3)
-
+def ai(q):
+    q=q.lower()
+    match=get_close_matches(q,list(kb.keys()),n=1,cutoff=0.3)
     if match:
-        return knowledge_base[match[0]]
-
-    for k in keys:
-        if k in query:
-            return knowledge_base[k]
-
-    return "AI is learning. Try asking about stress, energy, or homework."
+        return kb[match[0]]
+    for k in kb:
+        if k in q:
+            return kb[k]
+    return "AI is learning..."
 
 # ----------------------------
-# DASHBOARD METRICS
+# METRICS
 # ----------------------------
 
 def mood_score():
     if not st.session_state.mood_log:
         return 50
-
-    mapping = {"Happy": 80, "Neutral": 50, "Stressed": 30, "Sad": 20}
-    scores = [mapping[m[1]] for m in st.session_state.mood_log]
-    return int(np.mean(scores))
-
-energy_model = train_energy_model()
-energy_prediction = predict_energy(energy_model)
-
-mood_model = train_mood_model()
+    mapv={"Happy":80,"Neutral":50,"Stressed":30,"Sad":20}
+    return int(np.mean([mapv[m[1]] for m in st.session_state.mood_log]))
 
 # ----------------------------
-# NAVIGATION
+# SIDEBAR
 # ----------------------------
 
-menu = st.sidebar.radio(
-    f"Logged in as: {st.session_state.user}",
-    ["🏠 Dashboard", "🧠 AI Assistant", "🚨 Safety", "🛒 Grocery", "⚡ Energy", "😊 Mood", "📄 Weekly Report"]
-)
+menu=st.sidebar.radio("Navigation",
+["🏠 Dashboard","🧠 AI","🚨 Safety","🛒 Grocery","⚡ Energy","😊 Mood","📄 Report"])
 
 # ----------------------------
-# DASHBOARD
+# DASHBOARD (FIGMA STYLE)
 # ----------------------------
 
-if menu == "🏠 Dashboard":
-    st.title("🏠 AI Family Intelligence Dashboard")
+if menu=="🏠 Dashboard":
+    st.title("🏠 Family Intelligence Dashboard")
 
-    col1, col2, col3 = st.columns(3)
+    col1,col2,col3=st.columns(3)
 
     with col1:
-        st.metric("Mood Score", f"{mood_score()} / 100")
+        st.markdown(f"""
+        <div class='metric-box'>
+        <h3>Mood Score</h3>
+        <h1>{mood_score()}</h1>
+        </div>
+        """,unsafe_allow_html=True)
 
     with col2:
-        st.metric("ML Energy Forecast", round(energy_prediction, 2))
+        st.markdown(f"""
+        <div class='metric-box'>
+        <h3>Energy Forecast</h3>
+        <h1>{round(energy_predict(),2)}</h1>
+        </div>
+        """,unsafe_allow_html=True)
 
     with col3:
-        st.metric("Grocery Items", len(st.session_state.grocery_list))
+        st.markdown(f"""
+        <div class='metric-box'>
+        <h3>Grocery Items</h3>
+        <h1>{len(st.session_state.grocery_list)}</h1>
+        </div>
+        """,unsafe_allow_html=True)
 
+    st.markdown("<div class='card'>",unsafe_allow_html=True)
+    st.subheader("Energy Trend")
     st.line_chart(st.session_state.energy_usage)
+    st.markdown("</div>",unsafe_allow_html=True)
 
 # ----------------------------
-# AI ASSISTANT
+# AI
 # ----------------------------
 
-elif menu == "🧠 AI Assistant":
-    st.title("🧠 ML-Powered AI Assistant")
+elif menu=="🧠 AI":
+    st.title("🧠 Smart AI Assistant")
 
-    user_input = st.text_input("Ask something")
+    q=st.text_input("Ask")
 
-    if user_input:
-        response = smart_ai_response(user_input)
-        st.session_state.chat.append((user_input, response))
+    if q:
+        st.session_state.chat.append((q,ai(q)))
 
-    for q, r in reversed(st.session_state.chat[-10:]):
-        st.write(f"You: {q}")
-        st.write(f"AI: {r}")
-        st.write("---")
+    for a,b in reversed(st.session_state.chat[-8:]):
+        st.markdown(f"<div class='card'><b>You:</b> {a}<br><b>AI:</b> {b}</div>",unsafe_allow_html=True)
 
 # ----------------------------
 # SAFETY
 # ----------------------------
 
-elif menu == "🚨 Safety":
-    st.title("🚨 Smart Safety System")
+elif menu=="🚨 Safety":
+    st.title("🚨 Safety Center")
 
-    if mood_score() < 40:
+    if mood_score()<40:
         st.error("Emotional risk detected")
 
-    if energy_prediction > np.mean(st.session_state.energy_usage) + 2:
-        st.warning("High energy usage predicted (ML model)")
+    if energy_predict()>np.mean(st.session_state.energy_usage)+2:
+        st.warning("High energy usage predicted")
 
     if st.button("Emergency Alert"):
-        st.error("Alert sent to family members")
+        st.error("Alert sent")
 
 # ----------------------------
 # GROCERY
 # ----------------------------
 
-elif menu == "🛒 Grocery":
-    st.title("🛒 Smart Grocery Planner")
+elif menu=="🛒 Grocery":
+    st.title("🛒 Smart Grocery")
 
-    item = st.text_input("Add item")
+    item=st.text_input("Item")
 
     if st.button("Add") and item:
         st.session_state.grocery_list.append(item)
 
-    for i, g in enumerate(st.session_state.grocery_list, 1):
-        st.write(f"{i}. {g}")
+    for i,g in enumerate(st.session_state.grocery_list,1):
+        st.write(i,g)
 
 # ----------------------------
 # ENERGY
 # ----------------------------
 
-elif menu == "⚡ Energy":
-    st.title("⚡ ML Energy Forecast System")
+elif menu=="⚡ Energy":
+    st.title("⚡ Energy AI")
 
     st.line_chart(st.session_state.energy_usage)
-    st.success(f"Predicted next usage (ML): {round(energy_prediction,2)}")
+    st.success(f"Prediction: {round(energy_predict(),2)}")
 
 # ----------------------------
 # MOOD
 # ----------------------------
 
-elif menu == "😊 Mood":
-    st.title("😊 Family Mood Tracker")
+elif menu=="😊 Mood":
+    st.title("😊 Mood Tracker")
 
-    mood = st.selectbox("Mood", ["Happy", "Neutral", "Stressed", "Sad"])
+    m=st.selectbox("Mood",["Happy","Neutral","Stressed","Sad"])
 
     if st.button("Log"):
-        st.session_state.mood_log.append((datetime.now().strftime("%Y-%m-%d %H:%M"), mood))
+        st.session_state.mood_log.append((datetime.now().strftime("%H:%M"),m))
 
-    st.dataframe(pd.DataFrame(st.session_state.mood_log, columns=["Time", "Mood"]))
+    st.dataframe(pd.DataFrame(st.session_state.mood_log,columns=["Time","Mood"]))
 
 # ----------------------------
-# WEEKLY REPORT
+# REPORT
 # ----------------------------
 
-elif menu == "📄 Weekly Report":
-    st.title("📄 AI Weekly Intelligence Report")
+elif menu=="📄 Report":
+    st.title("📄 Weekly AI Report")
 
     if st.button("Generate"):
-        report = f"""
-FAMILY AI REPORT
--------------------
-Mood Score: {mood_score()}
-ML Energy Forecast: {round(energy_prediction,2)}
-Grocery Items: {len(st.session_state.grocery_list)}
-
-Insights:
-- Mood: {'Healthy' if mood_score()>60 else 'Needs attention'}
-- Energy: {'Rising trend' if energy_prediction>6 else 'Stable'}
-
-AI Suggestions:
-- Improve family bonding time
-- Optimize electricity usage
-- Maintain balanced routine
-"""
-        st.text_area("Report", report, height=300)
+        st.text_area("Report",
+        f"Mood:{mood_score()}\nEnergy:{round(energy_predict(),2)}\nItems:{len(st.session_state.grocery_list)}",
+        height=250)
