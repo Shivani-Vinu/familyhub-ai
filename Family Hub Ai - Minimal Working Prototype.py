@@ -70,7 +70,7 @@ if "auth" not in st.session_state:
 
 
 def login_page():
-    st.title("🔐 FamilyHub AI")
+    st.title("Kindred.")
     st.subheader("Secure Family Login")
 
     col1, col2 = st.columns(2)
