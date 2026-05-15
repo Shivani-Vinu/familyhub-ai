@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 # FamilyHub AI - Figma Style UI + ML Version
 # ============================
 
-st.set_page_config(page_title="FamilyHub AI", layout="wide")
+st.set_page_config(page_title="Kindred", layout="wide")
 
 # ----------------------------
 # MODERN UI (FIGMA-STYLE CSS)
